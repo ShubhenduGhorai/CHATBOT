@@ -76,6 +76,10 @@ function getWidgetScript(apiKey: string) {
   var textEl = panel.querySelector('#cbw-text');
   var sendEl = panel.querySelector('#cbw-send');
 
+  if (!bodyEl || !formEl || !textEl || !sendEl) {
+    return;
+  }
+
   function appendMessage(role, text) {
     var row = document.createElement('div');
     row.className = 'cbw-row ' + (role === 'user' ? 'cbw-user' : 'cbw-bot');
@@ -90,18 +94,18 @@ function getWidgetScript(apiKey: string) {
 
   button.addEventListener('click', function () {
     var opened = panel.classList.toggle('cbw-open');
-    if (opened) textEl.focus();
+    if (opened && textEl) textEl.focus();
   });
 
   formEl.addEventListener('submit', async function (event) {
     event.preventDefault();
-    var text = (textEl.value || '').trim();
+    var text = (textEl && textEl.value ? textEl.value : '').trim();
     if (!text) return;
 
     appendMessage('user', text);
-    textEl.value = '';
-    sendEl.disabled = true;
-    textEl.disabled = true;
+    if (textEl) textEl.value = '';
+    if (sendEl) sendEl.disabled = true;
+    if (textEl) textEl.disabled = true;
 
     var assistantBubble = appendMessage('assistant', '');
 
@@ -128,6 +132,7 @@ function getWidgetScript(apiKey: string) {
       while (true) {
         var chunk = await reader.read();
         if (chunk.done) break;
+        if (!chunk.value) continue;
         result += decoder.decode(chunk.value, { stream: true });
         assistantBubble.textContent = result;
         bodyEl.scrollTop = bodyEl.scrollHeight;
@@ -135,9 +140,9 @@ function getWidgetScript(apiKey: string) {
     } catch (e) {
       assistantBubble.textContent = 'Network error. Please try again.';
     } finally {
-      sendEl.disabled = false;
-      textEl.disabled = false;
-      textEl.focus();
+      if (sendEl) sendEl.disabled = false;
+      if (textEl) textEl.disabled = false;
+      if (textEl) textEl.focus();
     }
   });
 })();`;
