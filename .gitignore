@@ -8,3 +8,4 @@ out
 .env.production.local
 prisma/dev.db
 coverage
+tsconfig.tsbuildinfo
