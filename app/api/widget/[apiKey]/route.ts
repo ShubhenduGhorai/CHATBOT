@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { handleApiError } from '@/lib/http/error-handler';
 
 const apiKeySchema = z.string().min(20).max(200).regex(/^cb_live_[A-Za-z0-9_-]+$/);
 
@@ -149,18 +148,28 @@ type RouteContext = {
 };
 
 export async function GET(_: Request, context: RouteContext) {
-  try {
-    const apiKey = apiKeySchema.parse(context.params.apiKey);
-    const script = getWidgetScript(apiKey);
-
-    return new NextResponse(script, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/javascript; charset=utf-8',
-        'Cache-Control': 'public, max-age=300, s-maxage=300'
-      }
-    });
-  } catch (error) {
-    return handleApiError(error, { defaultStatus: 400 });
+  const apiKey = context.params?.apiKey ?? '';
+  const parsed = apiKeySchema.safeParse(apiKey);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_API_KEY',
+          message: 'Invalid widget API key'
+        }
+      },
+      { status: 400 }
+    );
   }
+
+  const script = getWidgetScript(parsed.data);
+
+  return new NextResponse(script, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Cache-Control': 'public, max-age=300, s-maxage=300'
+    }
+  });
 }
